@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片转Base64徽章生成器</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .badge-preview {
+            transition: all 0.3s ease;
+        }
+        .badge-preview:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f7fafc;
+        }
+        .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #edf2f7;
+        }
+        .color-input {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            height: 40px;
+            width: 40px;
+            border: none;
+        }
+        .color-input::-webkit-color-swatch {
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+                🖼️ 图片转Base64徽章生成器
+            </h1>
+            <p class="text-white text-opacity-90 text-lg">上传图片，转换为Base64，生成自定义徽章</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="grid md:grid-cols-2 gap-8">
+            <!-- Left Panel - Upload and Settings -->
+            <section class="space-y-6">
+                <!-- Upload Area -->
+                <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        📤 上传图片
+                    </h2>
+                    <div id="uploadArea" class="upload-area rounded-xl p-8 text-center cursor-pointer">
+                        <input type="file" id="imageInput" accept="image/*" class="hidden">
+                        <span class="text-4xl text-gray-400 mb-3">📷</span>
+                        <p class="text-gray-600 mb-2">点击或拖拽图片到此处</p>
+                        <p class="text-sm text-gray-500">支持 JPG, PNG, GIF, SVG 格式</p>
+                    </div>
+                    <div id="imagePreview" class="mt-4 hidden">
+                        <img id="previewImg" class="w-full rounded-lg shadow-md" alt="预览">
+                        <button id="removeImage" class="mt-3 w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition duration-200">
+                            🗑️ 移除图片
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Badge Settings -->
+                <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        ⚙️ 徽章设置
+                    </h2>
+                    
+                    <!-- Tabs -->
+                    <div class="flex space-x-2 mb-6">
+                        <button class="tab-btn tab-active px-4 py-2 rounded-lg font-medium transition duration-200" data-tab="shields">
+                            Shields.io
+                        </button>
+                        <button class="tab-btn px-4 py-2 rounded-lg font-medium bg-gray-200 hover:bg-gray-300 transition duration-200" data-tab="badgen">
+                            Badgen.net
+                        </button>
+                    </div>
+
+                    <!-- Shields.io Settings -->
+                    <div id="shieldsSettings" class="tab-content">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">徽章标题</label>
+                                <input type="text" id="shieldLabel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="例如: ICP备案">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">徽章内容</label>
+                                <input type="text" id="shieldMessage" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="例如: 京ICP备12345678号">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">徽章颜色</label>
+                                <div class="flex space-x-3">
+                                    <input type="color" id="shieldColor" class="color-input" value="#0066cc">
+                                    <input type="text" id="shieldColorText" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" value="#0066cc">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">预设Logo</label>
+                                <select id="shieldPresetLogo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">使用上传的图片</option>
+                                    <option value="github">GitHub</option>
+                                    <option value="twitter">Twitter</option>
+                                    <option value="chrome">Chrome</option>
+                                    <option value="firefox">Firefox</option>
+                                    <option value="safari">Safari</option>
+                                    <option value="edge">Edge</option>
+                                    <option value="node">Node.js</option>
+                                    <option value="npm">npm</option>
+                                    <option value="python">Python</option>
+                                    <option value="java">Java</option>
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="react">React</option>
+                                    <option value="vue">Vue</option>
+                                    <option value="docker">Docker</option>
+                                    <option value="kubernetes">Kubernetes</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Badgen.net Settings -->
+                    <div id="badgenSettings" class="tab-content hidden">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">徽章标题</label>
+                                <input type="text" id="badgenSubject" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="例如: ICP备案">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">徽章内容</label>
+                                <input type="text" id="badgenStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="例如: 京ICP备12345678号">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">徽章颜色</label>
+                                <div class="flex space-x-3">
+                                    <input type="color" id="badgenColor" class="color-input" value="#0066cc">
+                                    <input type="text" id="badgenColorText" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" value="#0066cc">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">图标来源</label>
+                                <div class="space-y-3">
+                                    <select id="badgenIconSource" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        <option value="preset">预设图标</option>
+                                        <option value="url">图片URL</option>
+                                    </select>
+                                    
+                                    <!-- 预设图标选择器 -->
+                                    <div id="badgenPresetIconContainer">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">预设图标</label>
+                                        <select id="badgenPresetIcon" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                            <option value="">选择图标</option>
+                                    <optgroup label="开发工具">
+                                        <option value="github">GitHub</option>
+                                        <option value="gitlab">GitLab</option>
+                                        <option value="bitbucket">Bitbucket</option>
+                                        <option value="stackoverflow">Stack Overflow</option>
+                                        <option value="codepen">CodePen</option>
+                                        <option value="codesandbox">CodeSandbox</option>
+                                    </optgroup>
+                                    <optgroup label="前端技术">
+                                        <option value="javascript">JavaScript</option>
+                                        <option value="typescript">TypeScript</option>
+                                        <option value="react">React</option>
+                                        <option value="vue">Vue</option>
+                                        <option value="angular">Angular</option>
+                                        <option value="svelte">Svelte</option>
+                                        <option value="webpack">Webpack</option>
+                                        <option value="vite">Vite</option>
+                                    </optgroup>
+                                    <optgroup label="后端技术">
+                                        <option value="node">Node.js</option>
+                                        <option value="npm">npm</option>
+                                        <option value="yarn">Yarn</option>
+                                        <option value="python">Python</option>
+                                        <option value="java">Java</option>
+                                        <option value="php">PHP</option>
+                                        <option value="go">Go</option>
+                                        <option value="rust">Rust</option>
+                                        <option value="ruby">Ruby</option>
+                                    </optgroup>
+                                    <optgroup label="数据库">
+                                        <option value="mysql">MySQL</option>
+                                        <option value="postgresql">PostgreSQL</option>
+                                        <option value="mongodb">MongoDB</option>
+                                        <option value="redis">Redis</option>
+                                        <option value="sqlite">SQLite</option>
+                                    </optgroup>
+                                    <optgroup label="云服务">
+                                        <option value="aws">AWS</option>
+                                        <option value="azure">Azure</option>
+                                        <option value="google">Google Cloud</option>
+                                        <option value="firebase">Firebase</option>
+                                        <option value="heroku">Heroku</option>
+                                        <option value="vercel">Vercel</option>
+                                        <option value="netlify">Netlify</option>
+                                        <option value="digitalocean">DigitalOcean</option>
+                                    </optgroup>
+                                    <optgroup label="容器化">
+                                        <option value="docker">Docker</option>
+                                        <option value="kubernetes">Kubernetes</option>
+                                        <option value="helm">Helm</option>
+                                    </optgroup>
+                                    <optgroup label="操作系统">
+                                        <option value="linux">Linux</option>
+                                        <option value="ubuntu">Ubuntu</option>
+                                        <option value="windows">Windows</option>
+                                        <option value="apple">Apple</option>
+                                        <option value="android">Android</option>
+                                    </optgroup>
+                                    <optgroup label="浏览器">
+                                        <option value="chrome">Chrome</option>
+                                        <option value="firefox">Firefox</option>
+                                        <option value="safari">Safari</option>
+                                        <option value="edge">Edge</option>
+                                        <option value="opera">Opera</option>
+                                    </optgroup>
+                                    <optgroup label="社交媒体">
+                                        <option value="twitter">Twitter</option>
+                                        <option value="facebook">Facebook</option>
+                                        <option value="instagram">Instagram</option>
+                                        <option value="linkedin">LinkedIn</option>
+                                        <option value="youtube">YouTube</option>
+                                        <option value="discord">Discord</option>
+                                        <option value="slack">Slack</option>
+                                        <option value="telegram">Telegram</option>
+                                        <option value="whatsapp">WhatsApp</option>
+                                    </optgroup>
+                                    <optgroup label="其他">
+                                        <option value="shield">Shield</option>
+                                        <option value="star">Star</option>
+                                        <option value="heart">Heart</option>
+                                        <option value="check">Check</option>
+                                        <option value="alert">Alert</option>
+                                        <option value="info">Info</option>
+                                        <option value="lock">Lock</option>
+                                        <option value="unlock">Unlock</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            
+                            <!-- URL图片输入框 -->
+                            <div id="badgenIconUrlContainer" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">图片URL</label>
+                                <input type="url" id="badgenIconUrl" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="https://example.com/icon.png">
+                                <p class="text-xs text-gray-500 mt-1">支持PNG、JPG、SVG格式的图片URL</p>
+                            </div>
+                        </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">图标缩放</label>
+                                <select id="badgenIconScale" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">默认</option>
+                                    <option value="0.8">小</option>
+                                    <option value="1">标准</option>
+                                    <option value="1.2">大</option>
+                                    <option value="1.5">特大</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel - Preview and Results -->
+            <section class="space-y-6">
+                <!-- Base64 Output -->
+                <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        📋 Base64编码
+                    </h2>
+                    <div id="base64Output" class="bg-gray-50 rounded-lg p-4 min-h-[120px] max-h-[200px] overflow-y-auto">
+                        <p class="text-gray-500 text-center">请先上传图片</p>
+                    </div>
+                    <button id="copyBase64" class="mt-3 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        📋 复制Base64
+                    </button>
+                </div>
+
+                <!-- Badge Preview -->
+                <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        🏆 徽章预览
+                    </h2>
+                    <div id="badgePreview" class="bg-gray-50 rounded-lg p-8 min-h-[120px] flex items-center justify-center">
+                        <p class="text-gray-500">请填写徽章标题或内容</p>
+                    </div>
+                </div>
+
+                <!-- Markdown Output -->
+                <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        📝 Markdown代码
+                    </h2>
+                    <div id="markdownOutput" class="bg-gray-50 rounded-lg p-4 min-h-[80px] max-h-[150px] overflow-y-auto">
+                        <p class="text-gray-500 text-center">请填写徽章参数后生成代码</p>
+                    </div>
+                    <button id="copyMarkdown" class="mt-3 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        📋 复制Markdown
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-white text-opacity-80">
+            <p class="text-sm">
+                🚀 支持 Shields.io 和 Badgen.net 徽章服务
+            </p>
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-full opacity-0 transition-all duration-300 z-50 pointer-events-none">
+        ✅
+        <span id="toastMessage">已复制到剪贴板</span>
+    </div>
+
+    <script>
+        // Global variables
+        let currentBase64 = '';
+        let currentLogoBase64 = '';
+
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const removeImageBtn = document.getElementById('removeImage');
+        const base64Output = document.getElementById('base64Output');
+        const copyBase64Btn = document.getElementById('copyBase64');
+        const badgePreview = document.getElementById('badgePreview');
+        const markdownOutput = document.getElementById('markdownOutput');
+        const copyMarkdownBtn = document.getElementById('copyMarkdown');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // Tab functionality
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                // Update button styles
+                tabBtns.forEach(b => {
+                    b.classList.remove('tab-active');
+                    b.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                });
+                btn.classList.add('tab-active');
+                btn.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+                
+                // Show/hide content
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(tabName + 'Settings').classList.remove('hidden');
+                
+                // Update badge preview
+                updateBadgePreview();
+            });
+        });
+
+        // Upload functionality
+        uploadArea.addEventListener('click', () => imageInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleImageUpload(files[0]);
+            }
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleImageUpload(e.target.files[0]);
+            }
+        });
+
+        removeImageBtn.addEventListener('click', removeImage);
+
+        function handleImageUpload(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result;
+                currentBase64 = base64;
+                // 移除 data:image/...;base64, 前缀，只保留纯base64数据
+                currentLogoBase64 = base64.split(',')[1];
+                
+                // Show preview
+                previewImg.src = base64;
+                uploadArea.classList.add('hidden');
+                imagePreview.classList.remove('hidden');
+                
+                // Update Base64 output
+                updateBase64Output(base64);
+                
+                // Enable copy button
+                copyBase64Btn.disabled = false;
+                
+                // Update badge preview
+                updateBadgePreview();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            currentBase64 = '';
+            currentLogoBase64 = '';
+            imageInput.value = '';
+            uploadArea.classList.remove('hidden');
+            imagePreview.classList.add('hidden');
+            base64Output.innerHTML = '<p class="text-gray-500 text-center">请先上传图片</p>';
+            copyBase64Btn.disabled = true;
+            updateBadgePreview();
+        }
+
+        function updateBase64Output(base64) {
+            const truncated = base64.length > 500 ? base64.substring(0, 500) + '...' : base64;
+            base64Output.innerHTML = `<code class="text-sm text-gray-700 break-all">${truncated}</code>`;
+        }
+
+        // Color input synchronization
+        document.getElementById('shieldColor').addEventListener('input', (e) => {
+            document.getElementById('shieldColorText').value = e.target.value;
+            updateBadgePreview();
+        });
+
+        document.getElementById('shieldColorText').addEventListener('input', (e) => {
+            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                document.getElementById('shieldColor').value = e.target.value;
+                updateBadgePreview();
+            }
+        });
+
+        document.getElementById('badgenColor').addEventListener('input', (e) => {
+            document.getElementById('badgenColorText').value = e.target.value;
+            updateBadgePreview();
+        });
+
+        document.getElementById('badgenColorText').addEventListener('input', (e) => {
+            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                document.getElementById('badgenColor').value = e.target.value;
+                updateBadgePreview();
+            }
+        });
+
+        // Badge preview update
+        const shieldInputs = ['shieldLabel', 'shieldMessage', 'shieldColor', 'shieldPresetLogo'];
+        const badgenInputs = ['badgenSubject', 'badgenStatus', 'badgenColor', 'badgenPresetIcon', 'badgenIconScale', 'badgenIconSource', 'badgenIconUrl'];
+
+        shieldInputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', updateBadgePreview);
+        });
+
+        badgenInputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', updateBadgePreview);
+        });
+
+        // 图标来源切换
+        document.getElementById('badgenIconSource').addEventListener('change', (e) => {
+            const source = e.target.value;
+            const presetContainer = document.getElementById('badgenPresetIconContainer');
+            const urlContainer = document.getElementById('badgenIconUrlContainer');
+            
+            if (source === 'preset') {
+                presetContainer.classList.remove('hidden');
+                urlContainer.classList.add('hidden');
+            } else {
+                presetContainer.classList.add('hidden');
+                urlContainer.classList.remove('hidden');
+            }
+            
+            updateBadgePreview();
+        });
+
+        function updateBadgePreview() {
+            const activeTab = document.querySelector('.tab-active').dataset.tab;
+            let badgeUrl = '';
+            let markdown = '';
+
+            if (activeTab === 'shields') {
+                const label = document.getElementById('shieldLabel').value;
+                const message = document.getElementById('shieldMessage').value;
+                const color = document.getElementById('shieldColor').value.replace('#', '');
+                const presetLogo = document.getElementById('shieldPresetLogo').value;
+                
+                // 如果标题和内容都为空，显示提示信息
+                if (!label && !message) {
+                    badgePreview.innerHTML = '<p class="text-gray-500">请填写徽章标题或内容</p>';
+                    markdownOutput.innerHTML = '<p class="text-gray-500 text-center">请填写徽章参数后生成代码</p>';
+                    copyMarkdownBtn.disabled = true;
+                    return;
+                }
+                
+                // 构建URL，根据内容情况构建不同的URL格式
+                let url;
+                if (label && message) {
+                    // 两个都有值
+                    url = `https://img.shields.io/badge/${encodeURIComponent(label)}-${encodeURIComponent(message)}-${color}`;
+                } else if (label) {
+                    // 只有标题
+                    url = `https://img.shields.io/badge/${encodeURIComponent(label)}-${color}`;
+                } else if (message) {
+                    // 只有内容
+                    url = `https://img.shields.io/badge/${encodeURIComponent(message)}-${color}`;
+                } else {
+                    // 都为空的情况在前面已经处理了
+                    return;
+                }
+                
+                // 优先使用预设Logo，其次使用上传的图片
+                if (presetLogo) {
+                    url += `?logo=${presetLogo}`;
+                } else if (currentLogoBase64) {
+                    url += `?logo=data:image/png;base64,${currentLogoBase64}`;
+                }
+                
+                badgeUrl = url;
+                const displayText = label || message;
+                markdown = `![${displayText}](${url})`;
+            } else {
+                const subject = document.getElementById('badgenSubject').value;
+                const status = document.getElementById('badgenStatus').value;
+                const color = document.getElementById('badgenColor').value.replace('#', '');
+                const iconSource = document.getElementById('badgenIconSource').value;
+                const presetIcon = document.getElementById('badgenPresetIcon').value;
+                const iconUrl = document.getElementById('badgenIconUrl').value;
+                const iconScale = document.getElementById('badgenIconScale').value;
+                
+                // 如果标题和内容都为空，显示提示信息
+                if (!subject && !status) {
+                    badgePreview.innerHTML = '<p class="text-gray-500">请填写徽章标题或内容</p>';
+                    markdownOutput.innerHTML = '<p class="text-gray-500 text-center">请填写徽章参数后生成代码</p>';
+                    copyMarkdownBtn.disabled = true;
+                    return;
+                }
+                
+                // 构建URL，根据内容情况构建不同的URL格式
+                let url;
+                if (subject && status) {
+                    // 两个都有值
+                    url = `https://badgen.net/badge/${encodeURIComponent(subject)}/${encodeURIComponent(status)}/${color}`;
+                } else if (subject) {
+                    // 只有标题
+                    url = `https://badgen.net/badge/${encodeURIComponent(subject)}/${color}`;
+                } else if (status) {
+                    // 只有内容
+                    url = `https://badgen.net/badge/${encodeURIComponent(status)}/${color}`;
+                } else {
+                    // 都为空的情况在前面已经处理了
+                    return;
+                }
+                // 构建查询参数
+                const params = [];
+                
+                // 根据图标来源设置图标
+                if (iconSource === 'preset' && presetIcon) {
+                    params.push(`icon=${presetIcon}`);
+                } else if (iconSource === 'url' && iconUrl) {
+                    // 验证URL格式
+                    try {
+                        new URL(iconUrl);
+                        params.push(`icon=${encodeURIComponent(iconUrl)}`);
+                    } catch (e) {
+                        badgePreview.innerHTML = '<p class="text-red-600">❌ 请输入有效的图片URL</p>';
+                        markdownOutput.innerHTML = '<p class="text-red-600 text-center">请输入有效的图片URL</p>';
+                        copyMarkdownBtn.disabled = true;
+                        return;
+                    }
+                } else if (currentLogoBase64 && iconSource === 'preset') {
+                    // 如果用户上传了图片但没有选择预设图标，提示使用URL选项
+                    badgePreview.innerHTML = '<p class="text-yellow-600">💡 请切换到"图片URL"选项或选择预设图标</p>';
+                    markdownOutput.innerHTML = '<p class="text-yellow-600 text-center">请切换到"图片URL"选项或选择预设图标</p>';
+                    copyMarkdownBtn.disabled = true;
+                    return;
+                } else if (!presetIcon && !iconUrl) {
+                    // 没有选择任何图标
+                    // 不添加icon参数，继续生成徽章
+                }
+                
+                // 添加图标缩放
+                if (iconScale) {
+                    params.push(`scale=${iconScale}`);
+                }
+                
+                // 如果有参数，添加到URL
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                
+                badgeUrl = url;
+                const displayText = subject || status;
+                markdown = `![${displayText}](${url})`;
+            }
+
+            // Update preview
+            badgePreview.innerHTML = `<img src="${badgeUrl}" alt="Badge Preview" class="badge-preview max-w-full">`;
+            
+            // Update markdown output
+            markdownOutput.innerHTML = `<code class="text-sm text-gray-700 break-all">${markdown}</code>`;
+            copyMarkdownBtn.disabled = false;
+        }
+
+        // Copy functionality
+        copyBase64Btn.addEventListener('click', () => {
+            navigator.clipboard.writeText(currentBase64).then(() => {
+                showToast('Base64已复制到剪贴板');
+            });
+        });
+
+        copyMarkdownBtn.addEventListener('click', () => {
+            const markdownText = markdownOutput.querySelector('code').textContent;
+            navigator.clipboard.writeText(markdownText).then(() => {
+                showToast('Markdown代码已复制到剪贴板');
+            });
+        });
+
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-full', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0', 'pointer-events-none');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+
+        // Initialize
+        // updateBadgePreview(); // 注释掉初始化，避免显示默认徽章
+    </script>
+</body>
+</html>
